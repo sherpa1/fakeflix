@@ -1,2 +1,5 @@
 movies/api/.env 
 movies/api/node_modules
+
+movies/db/data
+movies/db/.env

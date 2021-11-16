@@ -1,10 +1,9 @@
 version: "3"
 
-networks:
-  ff:
-    driver: bridge
-
 services:
+  ################
+  ## MOVIES API ##
+  ################
   ff_movies:
     container_name: ff_movies
     image: node:lts
@@ -15,3 +14,42 @@ services:
     env_file: ./movies/api/.env
     networks:
       - ff
+    depends_on:
+      - ff_movies_db
+    links:
+      - ff_movies_db
+
+  ###############
+  ## DB MOVIES ##
+  ###############
+  ff_movies_db:
+    container_name: ff_movies_db
+    image: mariadb:latest
+    restart: unless-stopped
+    env_file:
+      - ./movies/db/.env
+    volumes:
+      - ./movies/db/data:/var/lib/mysql
+      - ./movies/db/scripts/schema.sql:/docker-entrypoint-initdb.d/1.sql
+      - ./movies/db/scripts/data.sql:/docker-entrypoint-initdb.d/2.sql
+    #restart: always #for production only
+    networks:
+      - ff
+
+  #############
+  ## ADMINER ##
+  #############
+  ff_adminer:
+    container_name: ff_adminer
+    restart: unless-stopped
+    image: adminer
+    ports:
+      - 8181:8080
+    networks:
+      - ff
+    depends_on:
+      - ff_movies_db
+
+networks:
+  ff:
+    driver: bridge
