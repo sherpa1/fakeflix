@@ -10,8 +10,6 @@ const moviesRouter = require('./routes/movies');
 
 const app = express();
 
-const Token = require('./middlewares/Token');
-
 app.use(cors());
 app.use(helmet());
 app.use(logger('dev'));

@@ -14,4 +14,4 @@ async function del(uuid) {
 
 }
 
-module.exports.controller = { create, read, update, del };
+module.exports = { create, read, update, patch, del };

@@ -1,5 +1,5 @@
-movies/api/.env 
-movies/api/node_modules
+content/api/.env 
+content/api/node_modules
 
-movies/db/data
-movies/db/.env
+content/db/data
+content/db/.env

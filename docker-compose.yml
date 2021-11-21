@@ -1,40 +1,74 @@
-version: "3"
-
 services:
+  ###################
+  ## REVERSE PROXY ##
+  ###################
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy
+    ports:
+      - "8080:80"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    networks:
+      - ff
+    
+  whoami:
+    image: jwilder/whoami
+    expose:
+      - 8000
+    environment:
+      - VIRTUAL_HOST=whoami.fakeflix.local
+      - VIRTUAL_PORT=8000
+    networks:
+      - ff
+
   ################
-  ## MOVIES API ##
+  ## CONTENT API ##
   ################
-  ff_movies:
-    container_name: ff_movies
+  ff_content:
+    #restart: always #for production only
+    container_name: ff_content
     image: node:lts
     volumes:
-      - ./movies/api:/usr/src/app
+      - ./content/api:/usr/src/app
     working_dir: /usr/src/app
-    command: npm start
-    env_file: ./movies/api/.env
+    command: npm run dev
+    env_file: ./content/api/.env
+    environment:
+      - VIRTUAL_HOST=content.api.fakeflix.local
+      - VIRTUAL_PORT=3000
+    expose: 
+      - 3000
     networks:
       - ff
     depends_on:
-      - ff_movies_db
+      ff_content_db:
+        condition: service_healthy
     links:
-      - ff_movies_db
+      - ff_content_db
 
   ###############
-  ## DB MOVIES ##
+  ## DB CONTENT ##
   ###############
-  ff_movies_db:
-    container_name: ff_movies_db
+  ff_content_db:
+    #restart: always #for production only
+    container_name: ff_content_db
     image: mariadb:latest
     restart: unless-stopped
     env_file:
-      - ./movies/db/.env
+      - ./content/db/.env
     volumes:
-      - ./movies/db/data:/var/lib/mysql
-      - ./movies/db/scripts/schema.sql:/docker-entrypoint-initdb.d/1.sql
-      - ./movies/db/scripts/data.sql:/docker-entrypoint-initdb.d/2.sql
-    #restart: always #for production only
+      - ./content/db/data:/var/lib/mysql
+      - ./content/db/scripts/schema.sql:/docker-entrypoint-initdb.d/1.sql
+      - ./content/db/scripts/data.sql:/docker-entrypoint-initdb.d/2.sql
     networks:
       - ff
+    healthcheck:
+      #test: "/usr/bin/mysql --user={MYSQL_USER} --password={MYSQL_ROOT_PASSWORD} --execute \"SHOW DATABASES;\""
+      test: '/usr/bin/mysql --user=ff_content_db --password=password --execute "SHOW DATABASES;"'
+      # test: "/usr/local/mysql/bin/mysql --user=foo --password=foo --execute \"SHOW DATABASES;\""
+      interval: 3s
+      timeout: 1s
+      retries: 5
 
   #############
   ## ADMINER ##
@@ -48,7 +82,7 @@ services:
     networks:
       - ff
     depends_on:
-      - ff_movies_db
+      - ff_content_db
 
 networks:
   ff:
